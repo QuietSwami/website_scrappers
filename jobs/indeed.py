@@ -18,12 +18,33 @@ def get_next_page(base_link, page_number):
 def get_number_of_pages(base_soup, number_entries):
     return int(int(base_soup.find('div', {'id': 'searchCount'}).text.rstrip("\n\r").split(' ')[-2].replace(',',''))/number_entries)
 
+def get_listings(page_soup):
+    """
+    Returns a list of listing in a page, as the ID of the listing.
+    """ 
+    job_listings = page_soup.find_all('div', {'class': 'jobsearch-SerpJobCard'})
+    return [i['data-jk'] for i in job_listings]
+
+
+def get_extended_listing_link(jk):
+    return 'https://www.indeed.ca/viewjob?jk=' + jk
+
+def get_listing_info(page_soup):
+    """
+    This returns a list containing the entries to the csv.
+    """
+    location = page_soup.find('div', {'class': 'location'}).text
+    salary = page_soup.find('div', {'class': 'salary'}).text
+    company = page_soup.find('div', {'class': 'company'}).text
+    
 if __name__ == "__main__":
     base = 'http://indeed.ca/'
     base_link = create_link(base, 'Toronto', 'software developer')
     print(base_link)
-    # # base_soup = request_page(base_link)
-    # number_pages = get_number_of_pages(base_soup, 20)
-
-    for i in range(2, 20, 2):
-        print(get_next_page(base_link, i))
+    with open('indeed_Toronto.csv', 'w') as csv_file:
+        writer = csv.writer(csv_file)
+        writer.writerow(['Company', 'Location', 'Salary', 'Title', 'Main Language'])
+    for i in get_listings(request_page(base_link)):
+        writer.writerow(get_listing_info(request_page(get_extended_listing_link(i))))
+    writer.close()
+    print('Dataset Concluded')
